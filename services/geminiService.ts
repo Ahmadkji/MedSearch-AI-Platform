@@ -1,7 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Initialize the Google GenAI client with the API key from environment variables.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getResearchAssistantResponse = async (history: { role: string; content: string }[], nextMessage: string) => {
   try {
@@ -99,6 +100,10 @@ export const generateDiscoveryAnswer = async (question: string, context: string)
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `As a medical research assistant, provide a concise, expert answer to this follow-up question based on the provided context. 
+      
+      CRITICAL INSTRUCTION:
+      The context contains citations like [1] and [2]. You MUST use these exact citation markers in your response when referencing specific data points or studies from the context.
+      
       Limit the response to 2-3 short, informative paragraphs.
       
       Question: ${question}
