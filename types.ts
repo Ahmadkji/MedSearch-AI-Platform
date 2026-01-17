@@ -17,3 +17,15 @@ export interface PublicationTrend {
   year: number;
   count: number;
 }
+
+export interface Paper {
+  id: number;
+  title: string;
+  authors: string;
+  journal: string;
+  date: string;
+  citations: number;
+  abstract: string;
+  tags: string[];
+  url?: string;
+}

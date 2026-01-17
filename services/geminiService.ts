@@ -1,38 +1,135 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
+import { Paper } from "../types";
 
 // Initialize the Google GenAI client with the API key from environment variables.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const getResearchAssistantResponse = async (history: { role: string; content: string }[], nextMessage: string) => {
+/**
+ * Searches PubMed for relevant medical papers using Google Search grounding.
+ */
+export const searchPubMed = async (query: string): Promise<Paper[]> => {
   try {
-    const chat = ai.chats.create({
+    const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
+      contents: `Search PubMed and reputable medical databases for the top 5 most relevant and recent research papers regarding: "${query}". 
+      
+      Return the results as a JSON array of objects. 
+      Each object must include:
+      - title: The full paper title.
+      - authors: The main authors.
+      - journal: The publication journal.
+      - date: Month and year.
+      - abstract: A concise (2-3 sentence) summary of findings.
+      - citations: Estimated number of citations (integer).
+      - tags: 2-3 clinical keywords.
+      - url: The actual PubMed or DOI link.`,
       config: {
-        systemInstruction: `You are a specialized Medical Research Assistant for a platform called MedSearch. 
-        You help researchers analyze papers, summarize findings, and suggest follow-up questions. 
-        Keep responses professional, evidence-based, and concise. 
-        Use markdown for formatting.`,
-      },
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              authors: { type: Type.STRING },
+              journal: { type: Type.STRING },
+              date: { type: Type.STRING },
+              abstract: { type: Type.STRING },
+              citations: { type: Type.NUMBER },
+              tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+              url: { type: Type.STRING }
+            },
+            required: ["title", "authors", "journal", "date", "abstract", "tags", "url"]
+          }
+        }
+      }
     });
 
-    const response = await chat.sendMessage({ message: nextMessage });
-    return response.text;
+    const results = JSON.parse(response.text || "[]");
+    return results.map((paper: any, index: number) => ({
+      ...paper,
+      id: index + 1 // Assign consistent local IDs for citation mapping
+    }));
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "I apologize, I encountered an error processing your request. Please try again.";
+    console.error("PubMed Search Error:", error);
+    return [];
   }
 };
 
+/**
+ * Generates a comprehensive executive summary from a set of papers.
+ */
+export const generateGlobalSummary = async (query: string, papers: Paper[]) => {
+  try {
+    const papersContext = papers.map(p => `[${p.id}] ${p.title}: ${p.abstract}`).join('\n\n');
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview', // Switched to Flash to avoid 429
+      contents: `Based on the following research papers found for the query "${query}", provide an executive clinical summary.
+      
+      Papers:
+      ${papersContext}
+      
+      CRITICAL: Use citation markers like [1], [2], etc., throughout the text to refer to the source papers. Focus on Clinical Significance and Mechanism of Action. Structure the output into sections using markdown headers (###).`,
+      config: {
+        temperature: 0.3,
+      }
+    });
+    return response.text;
+  } catch (error: any) {
+    console.error("Global Summary Error:", error);
+    if (error?.message?.includes('429')) {
+      return "Rate limit reached. Please wait a moment and try searching again.";
+    }
+    return "Failed to generate executive summary.";
+  }
+};
+
+/**
+ * Summarizes a single clinical paper abstract.
+ */
+export const summarizeSinglePaper = async (paper: any) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `Provide a clinical summary of the following paper abstract. Focus on Objectives, Key Findings, and Clinical Implications. Use bullet points and markdown headers.
+      
+      TITLE: ${paper.title}
+      AUTHORS: ${paper.authors}
+      ABSTRACT: ${paper.abstract}`,
+      config: {
+        temperature: 0.2,
+      }
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Paper Summarization Error:", error);
+    return "Could not generate summary.";
+  }
+};
+
+/**
+ * Generates research notes from provided text.
+ */
 export const generateNotesFromText = async (summaryText: string) => {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Transform the following medical executive summary into a list of 3-5 distinct, professional research notes. 
-      Each note should have a concise title, a 1-2 sentence detailed observation, and 2-3 relevant medical tags.
+      model: "gemini-3-flash-preview", // Switched to Flash to avoid 429
+      contents: [{ 
+        parts: [{ 
+          text: `Transform the following medical executive summary into a list of 3-5 distinct, professional research notes. 
       
-      Summary:
-      ${summaryText}`,
+          CRITICAL INSTRUCTIONS:
+          1. Each note should have a concise title, a 1-2 sentence detailed observation, and 2-3 relevant medical tags.
+          2. PRESERVE CITATIONS: The input text contains citation markers like [1], [2], etc. You MUST include these exact markers in the note content whenever you are summarizing a point that was cited in the original text.
+          3. Maintain the professional, evidence-based tone of the source.
+          
+          Summary:
+          ${summaryText}`
+        }] 
+      }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -41,7 +138,7 @@ export const generateNotesFromText = async (summaryText: string) => {
             type: Type.OBJECT,
             properties: {
               title: { type: Type.STRING, description: "Concise title for the note" },
-              content: { type: Type.STRING, description: "Detailed content of the research observation" },
+              content: { type: Type.STRING, description: "Detailed content of the research observation with citation markers like [1]" },
               tags: { 
                 type: Type.ARRAY, 
                 items: { type: Type.STRING },
@@ -54,67 +151,50 @@ export const generateNotesFromText = async (summaryText: string) => {
       }
     });
 
-    return JSON.parse(response.text);
+    return JSON.parse(response.text || "[]");
   } catch (error) {
     console.error("Failed to generate notes:", error);
     return [];
   }
 };
 
-export const generateRelatedQuestions = async (query: string, summary: string) => {
+/**
+ * Handles chat interactions with the Research Assistant.
+ * Includes optional context for specific paper discussions.
+ */
+export const getResearchAssistantResponse = async (history: { role: string; content: string }[], message: string, context?: string) => {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Based on the following research query and executive summary, generate 4 highly professional, clinically relevant follow-up questions that a researcher might ask.
-      
-      Query: ${query}
-      Summary: ${summary}`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              question: { type: Type.STRING, description: "The follow-up question text" },
-              category: { type: Type.STRING, description: "Category like 'Clinical', 'Methodology', or 'Safety'" }
-            },
-            required: ["question", "category"]
-          }
-        }
-      }
-    });
-    return JSON.parse(response.text);
-  } catch (error) {
-    console.error("Failed to generate related questions:", error);
-    return [
-      { question: "What are the long-term safety implications beyond 52 weeks?", category: "Safety" },
-      { question: "How do these results compare across different age demographics?", category: "Clinical" },
-      { question: "Are there emerging JAK inhibitors with higher selectivity?", category: "Methodology" }
-    ];
-  }
-};
+    const contents = history.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    }));
 
-export const generateDiscoveryAnswer = async (question: string, context: string) => {
-  try {
+    // Append the current message as the last part of the contents
+    contents.push({
+      role: 'user',
+      parts: [{ text: message }]
+    });
+
+    const systemInstruction = `You are a professional medical research assistant. Provide evidence-based, clinical insights. Use a professional, objective tone. Use markdown headers (###) and bullet points for structure.
+    
+    ${context ? `IMPORTANT CONTEXT FOR THIS CONVERSATION:\n${context}\n\nWhen answering, focus on this specific paper/context provided above.` : "Provide general medical research assistance based on standard clinical knowledge."}
+    
+    Refer to specific findings precisely and include relevant details like sample sizes or specific outcomes if available. Use structured formatting for readability.`;
+
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `As a medical research assistant, provide a concise, expert answer to this follow-up question based on the provided context. 
-      
-      CRITICAL INSTRUCTION:
-      The context contains citations like [1] and [2]. You MUST use these exact citation markers in your response when referencing specific data points or studies from the context.
-      
-      Limit the response to 2-3 short, informative paragraphs.
-      
-      Question: ${question}
-      Context: ${context}`,
+      model: 'gemini-3-flash-preview', // Switched to Flash to avoid 429
+      contents: contents,
       config: {
-        temperature: 0.7,
+        systemInstruction: systemInstruction,
       }
     });
-    return response.text;
-  } catch (error) {
-    console.error("Discovery Answer Error:", error);
-    return "I'm unable to generate a deep-dive answer at this moment. Please try again or use the Research Assistant sidebar.";
+    
+    return response.text || "I'm sorry, I couldn't process that request.";
+  } catch (error: any) {
+    console.error("Research Assistant Error:", error);
+    if (error?.message?.includes('429')) {
+      return "The assistant is currently at its query limit. Please wait a moment.";
+    }
+    return "I encountered an error while processing your request. Please try again.";
   }
 };

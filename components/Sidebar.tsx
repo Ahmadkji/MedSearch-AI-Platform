@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { PlusCircle, User, LogOut, ChevronLeft, ChevronRight, FlaskConical, Microscope, X } from 'lucide-react';
+import { PlusCircle, Microscope, LayoutDashboard, Folder, Library } from 'lucide-react';
 import { NAVIGATION_ITEMS, RECENT_HISTORY } from '../constants';
 
 interface SidebarProps {
@@ -12,61 +11,57 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onCloseMobile }) => {
   return (
     <aside 
-      className={`bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out shadow-2xl lg:shadow-none ${
-        isCollapsed ? 'w-16' : 'w-64'
+      className={`bg-white border-r border-slate-100 flex flex-col h-full overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'w-20' : 'w-72'
       }`}
     >
-      {/* Brand & Mobile Close */}
-      <div className={`p-6 flex items-center justify-between ${isCollapsed ? 'justify-center px-2' : ''}`}>
-        <div className="flex items-center gap-3">
-          <div className="bg-emerald-600 p-1.5 rounded-lg flex-shrink-0">
-            <Microscope size={20} className="text-white" />
-          </div>
-          {!isCollapsed && (
-            <span className="font-bold text-xl text-slate-800 tracking-tight whitespace-nowrap">
-              MedSearch
-            </span>
-          )}
+      {/* Brand */}
+      <div className={`p-8 flex items-center gap-4 ${isCollapsed ? 'justify-center px-0' : ''}`}>
+        <div className="bg-[#10b981] p-2 rounded-xl flex-shrink-0 shadow-sm shadow-emerald-100">
+          <Microscope size={24} className="text-white" />
         </div>
-        <button 
-          onClick={onCloseMobile}
-          className="lg:hidden p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          <X size={20} />
-        </button>
+        {!isCollapsed && (
+          <span className="font-bold text-2xl text-slate-900 tracking-tight whitespace-nowrap">
+            MedSearch
+          </span>
+        )}
       </div>
 
       {/* Action Button */}
-      <div className={`px-4 mb-8 ${isCollapsed ? 'flex justify-center' : ''}`}>
-        <button className={`flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-all shadow-sm active:scale-95 ${
-          isCollapsed ? 'p-2.5 aspect-square' : 'w-full py-2 px-4 h-10'
+      <div className={`px-6 mb-10 ${isCollapsed ? 'flex justify-center' : ''}`}>
+        <button className={`flex items-center justify-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white rounded-xl font-bold transition-all shadow-md shadow-emerald-50 active:scale-95 ${
+          isCollapsed ? 'w-12 h-12 p-0' : 'w-full py-3 px-4'
         }`}>
-          <span className="text-lg font-light flex items-center justify-center">+</span>
+          <PlusCircle size={18} strokeWidth={2.5} />
           {!isCollapsed && <span className="text-sm">New Query</span>}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 space-y-6 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+      <nav className={`flex-1 space-y-10 ${isCollapsed ? 'px-2' : 'px-6'}`}>
         <div>
           {!isCollapsed && (
-            <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-4 px-2">
+            <h3 className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4 px-2">
               WORKSPACE
             </h3>
           )}
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {NAVIGATION_ITEMS.map((item) => (
               <li key={item.id}>
                 <a
                   href="#"
-                  className={`flex items-center gap-3 py-2.5 rounded-lg transition-colors ${
-                    isCollapsed ? 'justify-center px-0' : 'px-3'
+                  className={`flex items-center gap-4 py-3 rounded-xl transition-all ${
+                    isCollapsed ? 'justify-center px-0' : 'px-4'
                   } ${
-                    item.active ? 'bg-emerald-50/50 text-emerald-600 font-bold' : 'text-slate-500 hover:bg-slate-50'
+                    item.active 
+                      ? 'bg-[#ecfdf5] text-[#059669] font-bold' 
+                      : 'text-slate-500 hover:bg-slate-50'
                   }`}
                 >
-                  <span className="flex-shrink-0 opacity-80">{item.icon}</span>
-                  {!isCollapsed && <span className="text-sm">{item.label}</span>}
+                  <span className={`flex-shrink-0 ${item.active ? 'text-[#059669]' : 'text-slate-400'}`}>
+                    {item.icon}
+                  </span>
+                  {!isCollapsed && <span className="text-[14px]">{item.label}</span>}
                 </a>
               </li>
             ))}
@@ -75,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onCloseMobile 
 
         <div>
           {!isCollapsed && (
-            <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-4 px-2">
+            <h3 className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4 px-2">
               RECENT HISTORY
             </h3>
           )}
@@ -84,8 +79,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onCloseMobile 
               <li key={idx}>
                 <a 
                   href="#" 
-                  className={`block text-xs font-medium text-slate-500 hover:text-emerald-600 hover:bg-slate-50 rounded-lg truncate transition-all ${
-                    isCollapsed ? 'w-10 h-10 flex items-center justify-center mx-auto' : 'px-3 py-2'
+                  className={`block text-[13px] font-medium text-slate-500 hover:text-[#059669] hover:bg-[#ecfdf5]/50 rounded-lg truncate transition-all ${
+                    isCollapsed ? 'w-10 h-10 flex items-center justify-center mx-auto' : 'px-4 py-2.5'
                   }`}
                 >
                   {isCollapsed ? (
@@ -101,19 +96,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, onCloseMobile 
       </nav>
 
       {/* User Footer */}
-      <div className={`p-4 border-t border-slate-100 mt-auto ${isCollapsed ? 'flex justify-center' : ''}`}>
-        <div className={`flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors ${
-          isCollapsed ? 'justify-center w-full' : ''
+      <div className={`p-6 border-t border-slate-50 mt-auto ${isCollapsed ? 'flex justify-center' : ''}`}>
+        <div className={`flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-all ${
+          isCollapsed ? 'justify-center' : ''
         }`}>
           <img 
-            src="https://picsum.photos/id/64/40/40" 
+            src="https://picsum.photos/id/64/64/64" 
             alt="User" 
-            className="w-8 h-8 rounded-full bg-slate-200 object-cover flex-shrink-0"
+            className="w-10 h-10 rounded-full bg-slate-200 object-cover flex-shrink-0 ring-2 ring-emerald-50"
           />
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-800 truncate">Dr. Sarah Chen</p>
-              <p className="text-[10px] font-medium text-slate-400 truncate">Research Lead</p>
+              <p className="text-[14px] font-bold text-slate-900 truncate leading-none mb-1">Dr. Sarah Chen</p>
+              <p className="text-[12px] font-medium text-slate-400 truncate leading-none">Research Lead</p>
             </div>
           )}
         </div>
