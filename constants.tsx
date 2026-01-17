@@ -3,7 +3,7 @@ import React from 'react';
 import { LayoutDashboard, Folder, Library, PlusCircle, Search, Bell, Settings, Share2, PanelRight, ChevronRight, MessageSquare, ExternalLink } from 'lucide-react';
 
 export const COLORS = {
-  primary: '#2563eb',
+  primary: '#059669', // Emerald 600
   sidebarBg: '#ffffff',
   contentBg: '#f8fafc',
   border: '#e2e8f0',

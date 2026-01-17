@@ -57,32 +57,32 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
   );
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 lg:p-8 max-w-6xl mx-auto">
       {/* Title Area */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 mb-1">Analysis Results</h1>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+        <h1 className="text-xl lg:text-2xl font-bold text-slate-900 mb-1">Analysis Results</h1>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] lg:text-xs text-slate-500">
           <span>Found 142 articles</span>
-          <span className="text-slate-300">•</span>
+          <span className="text-slate-300 hidden sm:inline">•</span>
           <span>Filtered to 12 relevant studies</span>
-          <span className="text-slate-300">•</span>
+          <span className="text-slate-300 hidden sm:inline">•</span>
           <span>Updated 2 mins ago</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-8 border-b border-slate-200 mb-6">
+      <div className="flex gap-6 lg:gap-8 border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar -mx-4 px-4 lg:mx-0 lg:px-0">
         {tabs.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-3 text-sm font-medium transition-all relative ${
-              activeTab === tab ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+            className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${
+              activeTab === tab ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
             {tab}
             {activeTab === tab && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"></div>
             )}
           </button>
         ))}
@@ -91,30 +91,30 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
       {activeTab === "Papers (12)" && (
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Filters Bar */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                Study Type <ChevronDown size={14} className="text-slate-400" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                Study Type <ChevronDown size={12} className="text-slate-400" />
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                Year <ChevronDown size={14} className="text-slate-400" />
+              <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                Year <ChevronDown size={12} className="text-slate-400" />
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-                Journal <ChevronDown size={14} className="text-slate-400" />
+              <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+                Journal <ChevronDown size={12} className="text-slate-400" />
               </button>
-              <button className="text-xs font-medium text-blue-600 hover:text-blue-700 ml-2">
-                Reset Filters
+              <button className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 ml-1">
+                Reset
               </button>
             </div>
             
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
                 <Search size={14} />
               </div>
               <input 
                 type="text" 
-                placeholder="Filter results..." 
-                className="bg-white border border-slate-200 rounded-lg py-1.5 pl-9 pr-4 text-xs w-48 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                placeholder="Filter..." 
+                className="bg-white border border-slate-200 rounded-lg py-1.5 pl-9 pr-4 text-xs w-full sm:w-40 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
               />
             </div>
           </div>
@@ -122,52 +122,52 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
           {/* Paper List */}
           <div className="space-y-4">
             {papers.map((paper) => (
-              <div key={paper.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm group">
+              <div key={paper.id} className="bg-white border border-slate-200 rounded-xl p-4 lg:p-6 shadow-sm group">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex flex-wrap gap-2">
                     {paper.tags.map(tag => (
-                      <span key={tag} className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                      <span key={tag} className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] lg:text-[10px] font-bold rounded uppercase tracking-wider">
                         {tag}
                       </span>
                     ))}
                   </div>
-                  <button className="text-slate-300 hover:text-blue-600 transition-colors">
+                  <button className="text-slate-300 hover:text-emerald-600 transition-colors p-1">
                     <Bookmark size={18} />
                   </button>
                 </div>
 
-                <h3 className="text-lg font-bold text-blue-600 hover:underline cursor-pointer mb-2">
+                <h3 className="text-base lg:text-lg font-bold text-emerald-600 hover:underline cursor-pointer mb-2 leading-tight">
                   {paper.title}
                 </h3>
 
-                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mb-4 font-medium">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 mb-4 font-medium">
                   <span className="text-slate-900 font-bold">{paper.authors}</span>
                   <span className="text-slate-300">•</span>
                   <span>{paper.journal}</span>
-                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-300 hidden sm:inline">•</span>
                   <span>{paper.date}</span>
-                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-300 hidden sm:inline">•</span>
                   <span>Cited by {paper.citations}</span>
                 </div>
 
-                <p className="text-sm text-slate-600 leading-relaxed mb-6 line-clamp-2">
+                <p className="text-xs lg:text-sm text-slate-600 leading-relaxed mb-6 line-clamp-2">
                   {paper.abstract}
                 </p>
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                  <div className="flex items-center gap-6">
-                    <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 border-t border-slate-50">
+                  <div className="flex items-center gap-4 lg:gap-6">
+                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors">
                       <FileText size={14} />
-                      Full Text PDF
+                      PDF
                     </button>
-                    <button className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors">
+                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-emerald-600 transition-colors">
                       <ExternalLink size={14} />
-                      PubMed View
+                      PubMed
                     </button>
                   </div>
                   <button 
                     onClick={() => onChatWithPaper?.(paper)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors"
+                    className="flex items-center justify-center gap-2 bg-slate-50 sm:bg-transparent py-2.5 sm:py-0 rounded-lg sm:rounded-none text-xs font-bold sm:font-semibold text-emerald-600 sm:text-slate-500 hover:text-emerald-600 transition-colors active:scale-95"
                   >
                     <MessageSquare size={14} />
                     Chat with Paper
@@ -181,7 +181,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
 
       {activeTab === "Notes" && (
         <div className="animate-in fade-in duration-300">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-4 flex-1">
               <div className="relative flex-1 max-w-sm">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -189,42 +189,39 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
                   type="text" 
                   value={noteSearch}
                   onChange={(e) => setNoteSearch(e.target.value)}
-                  placeholder="Search your notes..." 
-                  className="w-full bg-white border border-slate-200 rounded-lg py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                  placeholder="Search notes..." 
+                  className="w-full bg-white border border-slate-200 rounded-lg py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all shadow-sm"
                 />
               </div>
-              <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
+              <button className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
                 <Tag size={14} />
                 <span>Tags</span>
               </button>
             </div>
-            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm">
+            <button className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm active:scale-95">
               <Plus size={16} />
               <span>New Note</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
             {filteredNotes.map((note) => (
-              <div key={note.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:border-blue-200 transition-all group flex flex-col h-full">
+              <div key={note.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:border-emerald-200 transition-all group flex flex-col h-full">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex flex-wrap gap-1.5">
                     {note.tags.map(tag => (
-                      <span key={tag} className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                      <span key={tag} className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] lg:text-[10px] font-bold rounded uppercase tracking-wider">
                         {tag}
                       </span>
                     ))}
                   </div>
-                  <button className="text-slate-300 hover:text-slate-500 transition-colors opacity-0 group-hover:opacity-100">
-                    <MoreHorizontal size={16} />
-                  </button>
                 </div>
                 
-                <h4 className="font-bold text-slate-800 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                <h4 className="font-bold text-slate-800 mb-2 line-clamp-1 group-hover:text-emerald-600 transition-colors">
                   {note.title}
                 </h4>
                 
-                <p className="text-xs text-slate-600 leading-relaxed mb-6 line-clamp-3 flex-grow">
+                <p className="text-[11px] lg:text-xs text-slate-600 leading-relaxed mb-6 line-clamp-3 flex-grow">
                   {note.content}
                 </p>
                 
@@ -235,42 +232,26 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock size={12} />
-                    <span>Edited {note.lastEdited}</span>
+                    <span>{note.lastEdited}</span>
                   </div>
                 </div>
               </div>
             ))}
-
-            {/* Empty State placeholder */}
-            {filteredNotes.length === 0 && (
-              <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400">
-                <div className="bg-slate-100 p-4 rounded-full mb-4">
-                  <FileText size={32} />
-                </div>
-                <p className="text-sm font-medium">No notes found matching your search</p>
-                <button 
-                  onClick={() => setNoteSearch("")}
-                  className="mt-2 text-blue-600 text-sm font-bold hover:underline"
-                >
-                  Clear search
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
 
       {activeTab === "Overview" && (
-        <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm animate-in fade-in duration-300">
-           <h2 className="text-xl font-bold text-slate-900 mb-6">Executive Summary</h2>
-           <div className="space-y-6 text-slate-700 leading-relaxed">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 lg:p-8 shadow-sm animate-in fade-in duration-300">
+           <h2 className="text-lg lg:text-xl font-bold text-slate-900 mb-4 lg:mb-6">Executive Summary</h2>
+           <div className="space-y-4 lg:space-y-6 text-sm lg:text-base text-slate-700 leading-relaxed">
              <p>
                <span className="font-bold text-slate-900">Primary Outcome:</span> Oral JAK inhibitors, specifically baricitinib and ritlecitinib, have demonstrated superior efficacy in inducing hair regrowth compared to placebo in patients with severe alopecia areata (AA).
              </p>
              <p>
                <span className="font-bold text-slate-900">Safety Profile:</span> Most common adverse events include upper respiratory tract infections, headache, and acne. Serious infections were rare but present across all major phase 3 trials.
              </p>
-             <div className="bg-blue-50/50 p-4 border-l-4 border-blue-500 rounded-r-lg text-sm italic text-slate-600">
+             <div className="bg-emerald-50/50 p-4 border-l-4 border-emerald-500 rounded-r-lg text-xs lg:text-sm italic text-slate-600">
                "Current evidence suggests that JAK inhibitors are the most effective systemic therapy available for AA, though long-term maintenance data is still being collected."
              </div>
            </div>
