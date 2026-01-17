@@ -1,10 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
-import { Filter, Calendar, ChevronDown, Search, Bookmark, FileText, ExternalLink, MessageSquare, Plus, MoreHorizontal, Clock, Tag, ChevronRight, BookOpen, X, Sparkles, Wand2, CheckCircle2, Loader2 } from 'lucide-react';
-import { generateNotesFromText } from '../services/geminiService';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Filter, Calendar, ChevronDown, Search, Bookmark, FileText, ExternalLink, MessageSquare, Plus, MoreHorizontal, Clock, Tag, ChevronRight, BookOpen, X, Sparkles, Wand2, CheckCircle2, Loader2, HelpCircle, ArrowRight, Save, BookmarkCheck } from 'lucide-react';
+import { generateNotesFromText, generateRelatedQuestions, generateDiscoveryAnswer } from '../services/geminiService';
 
 interface AnalysisViewProps {
   onChatWithPaper?: (paper: any) => void;
+  query?: string;
 }
 
 interface Note {
@@ -16,7 +17,12 @@ interface Note {
   lastEdited: string;
 }
 
-const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
+interface RelatedQuestion {
+  question: string;
+  category: string;
+}
+
+const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper, query = "Efficacy of JAK inhibitors in treating severe alopecia areata" }) => {
   const tabs = ["Overview", "Papers (12)", "Notes"];
   const [activeTab, setActiveTab] = React.useState("Overview");
   const [noteSearch, setNoteSearch] = useState("");
@@ -24,6 +30,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [relatedQuestions, setRelatedQuestions] = useState<RelatedQuestion[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  
+  // Inline Discovery States
+  const [activeDiscoveryQuestion, setActiveDiscoveryQuestion] = useState<string | null>(null);
+  const [discoveryAnswer, setDiscoveryAnswer] = useState<string | null>(null);
+  const [isAnsweringDiscovery, setIsAnsweringDiscovery] = useState(false);
+  const [isDiscoverySaved, setIsDiscoverySaved] = useState(false);
+  const discoveryResultRef = useRef<HTMLDivElement>(null);
   
   // Note Form State
   const [newNote, setNewNote] = useState({ title: '', content: '', tags: '' });
@@ -70,10 +85,23 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
     }
   ];
 
+  // Load Related Questions
+  useEffect(() => {
+    if (activeTab === "Overview" && relatedQuestions.length === 0) {
+      loadQuestions();
+    }
+  }, [activeTab]);
+
+  const loadQuestions = async () => {
+    setIsLoadingQuestions(true);
+    const summaryText = document.getElementById('summary-body')?.innerText || "";
+    const questions = await generateRelatedQuestions(query, summaryText);
+    setRelatedQuestions(questions);
+    setIsLoadingQuestions(false);
+  };
+
   const handleSynthesizeNotes = async () => {
     setIsSynthesizing(true);
-    
-    // Get summary text from DOM or predefined string
     const summaryContent = document.getElementById('summary-body')?.innerText || "";
     const generated = await generateNotesFromText(summaryContent);
     
@@ -93,6 +121,44 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
     }
     
     setIsSynthesizing(false);
+  };
+
+  const handleQuestionClick = async (question: string) => {
+    if (activeDiscoveryQuestion === question && discoveryAnswer) return;
+
+    setActiveDiscoveryQuestion(question);
+    setIsAnsweringDiscovery(true);
+    setDiscoveryAnswer(null);
+    setIsDiscoverySaved(false);
+
+    const summaryContent = document.getElementById('summary-body')?.innerText || "";
+    const result = await generateDiscoveryAnswer(question, summaryContent);
+    
+    setDiscoveryAnswer(result);
+    setIsAnsweringDiscovery(false);
+
+    // Scroll to the result
+    setTimeout(() => {
+      discoveryResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
+  const handleSaveDiscoveryToNotes = () => {
+    if (!activeDiscoveryQuestion || !discoveryAnswer || isDiscoverySaved) return;
+    
+    const note: Note = {
+      id: Date.now(),
+      title: `Insight: ${activeDiscoveryQuestion}`,
+      content: discoveryAnswer,
+      tags: ["Discovery", "AI Generated"],
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      lastEdited: "Just now"
+    };
+
+    setNotes([note, ...notes]);
+    setIsDiscoverySaved(true);
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 2000);
   };
 
   const allTags = useMemo(() => {
@@ -189,7 +255,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
       </div>
 
       {activeTab === "Overview" && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-12">
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm relative">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Executive Summary</h2>
@@ -197,7 +263,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
                 {showSuccess ? (
                   <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 animate-in fade-in zoom-in-95">
                     <CheckCircle2 size={16} />
-                    <span>Notes Added</span>
+                    <span>Added to Notes</span>
                   </div>
                 ) : (
                   <button 
@@ -286,6 +352,145 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
               <div className="bg-emerald-50/50 p-6 border-l-4 border-emerald-500 rounded-r-lg text-[13px] lg:text-sm italic text-slate-600 leading-relaxed">
                 "The shift from symptomatic topical treatment to targeted systemic inhibition represents a paradigm shift in alopecia research, 
                 though long-term safety data beyond 52 weeks is essential for evaluating the risk of thromboembolic events and malignancy."
+              </div>
+
+              {/* Discovery Paths Section */}
+              <div className="pt-8 border-t border-slate-100">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <HelpCircle size={14} className="text-emerald-500" />
+                  Discovery Paths (Related Questions)
+                </h3>
+                
+                {isLoadingQuestions ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="h-12 bg-slate-50 rounded-lg animate-pulse" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                    {relatedQuestions.map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleQuestionClick(item.question)}
+                        disabled={isAnsweringDiscovery && activeDiscoveryQuestion === item.question}
+                        className={`group flex flex-col items-start p-4 bg-white border rounded-xl transition-all text-left relative overflow-hidden ${
+                          activeDiscoveryQuestion === item.question 
+                            ? 'border-emerald-500 shadow-md ring-1 ring-emerald-500/20' 
+                            : 'border-slate-100 hover:border-emerald-200 hover:shadow-md'
+                        }`}
+                      >
+                        <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {isAnsweringDiscovery && activeDiscoveryQuestion === item.question ? (
+                            <Loader2 size={14} className="text-emerald-400 animate-spin" />
+                          ) : (
+                            <ArrowRight size={14} className="text-emerald-400" />
+                          )}
+                        </div>
+                        <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider mb-1 px-1.5 py-0.5 bg-emerald-50 rounded">
+                          {item.category}
+                        </span>
+                        <p className="text-xs font-semibold text-slate-700 leading-tight pr-4">
+                          {item.question}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Inline Discovery Result */}
+                {(isAnsweringDiscovery || discoveryAnswer) && activeDiscoveryQuestion && (
+                  <div 
+                    ref={discoveryResultRef}
+                    className="animate-in fade-in slide-in-from-top-4 duration-500 bg-slate-50/50 border border-emerald-100 rounded-2xl p-6 lg:p-8 relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 w-full h-1 bg-emerald-100">
+                      {isAnsweringDiscovery && <div className="h-full bg-emerald-500 animate-[shimmer_2s_infinite]" style={{ width: '40%' }}></div>}
+                    </div>
+
+                    <div className="flex items-start justify-between gap-6 mb-6">
+                      <div className="flex gap-4">
+                        <div className="flex-shrink-0 w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+                          <HelpCircle size={20} />
+                        </div>
+                        <div className="pt-0.5">
+                          <h4 className="text-[15px] font-bold text-slate-900 leading-tight">{activeDiscoveryQuestion}</h4>
+                          <div className="mt-1 flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                              <Clock size={10} />
+                              Generated Just Now
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {discoveryAnswer && !isAnsweringDiscovery && (
+                          <button 
+                            onClick={handleSaveDiscoveryToNotes}
+                            disabled={isDiscoverySaved}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${
+                              isDiscoverySaved 
+                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-default' 
+                                : 'bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-500'
+                            }`}
+                          >
+                            {isDiscoverySaved ? (
+                              <>
+                                <BookmarkCheck size={14} strokeWidth={2.5} />
+                                <span>Saved to Notes</span>
+                              </>
+                            ) : (
+                              <>
+                                <Save size={14} strokeWidth={2.5} />
+                                <span>Save to Notes</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => { setActiveDiscoveryQuestion(null); setDiscoveryAnswer(null); }}
+                          className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-all border border-transparent hover:border-slate-200"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      {isAnsweringDiscovery ? (
+                        <div className="space-y-4">
+                          <div className="h-4 bg-slate-200/50 rounded animate-pulse w-3/4"></div>
+                          <div className="h-4 bg-slate-200/50 rounded animate-pulse w-full"></div>
+                          <div className="h-4 bg-slate-200/50 rounded animate-pulse w-5/6"></div>
+                        </div>
+                      ) : (
+                        <div className="text-sm lg:text-[15px] text-slate-700 leading-relaxed space-y-4 whitespace-pre-wrap max-w-none prose prose-slate prose-sm lg:prose-base">
+                          {discoveryAnswer}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-8 flex items-center justify-between pt-5 border-t border-slate-200/50">
+                      <div className="flex items-center gap-3">
+                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-1 rounded-lg uppercase tracking-wider">
+                          <Sparkles size={12} className="text-amber-400" />
+                          AI Deep Dive
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-400 italic font-medium">Source context: Combined meta-analysis of current query results</span>
+                    </div>
+                  </div>
+                )}
+                
+                {!isLoadingQuestions && relatedQuestions.length === 0 && (
+                   <button 
+                    onClick={loadQuestions}
+                    className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1"
+                   >
+                     Load follow-up insights <ArrowRight size={12} />
+                   </button>
+                )}
               </div>
             </div>
           </div>

@@ -59,3 +59,57 @@ export const generateNotesFromText = async (summaryText: string) => {
     return [];
   }
 };
+
+export const generateRelatedQuestions = async (query: string, summary: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Based on the following research query and executive summary, generate 4 highly professional, clinically relevant follow-up questions that a researcher might ask.
+      
+      Query: ${query}
+      Summary: ${summary}`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              question: { type: Type.STRING, description: "The follow-up question text" },
+              category: { type: Type.STRING, description: "Category like 'Clinical', 'Methodology', or 'Safety'" }
+            },
+            required: ["question", "category"]
+          }
+        }
+      }
+    });
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Failed to generate related questions:", error);
+    return [
+      { question: "What are the long-term safety implications beyond 52 weeks?", category: "Safety" },
+      { question: "How do these results compare across different age demographics?", category: "Clinical" },
+      { question: "Are there emerging JAK inhibitors with higher selectivity?", category: "Methodology" }
+    ];
+  }
+};
+
+export const generateDiscoveryAnswer = async (question: string, context: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `As a medical research assistant, provide a concise, expert answer to this follow-up question based on the provided context. 
+      Limit the response to 2-3 short, informative paragraphs.
+      
+      Question: ${question}
+      Context: ${context}`,
+      config: {
+        temperature: 0.7,
+      }
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Discovery Answer Error:", error);
+    return "I'm unable to generate a deep-dive answer at this moment. Please try again or use the Research Assistant sidebar.";
+  }
+};
