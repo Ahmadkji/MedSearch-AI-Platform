@@ -1,0 +1,7 @@
+{
+  "name": "MedSearch AI Platform",
+  "description": "A high-fidelity medical research and analysis platform featuring AI-powered summaries, publication trends, and a dedicated research assistant.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
