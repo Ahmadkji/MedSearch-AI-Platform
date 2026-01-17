@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { Filter, Calendar, ChevronDown, Search, Bookmark, FileText, ExternalLink, MessageSquare, Plus, MoreHorizontal, Clock, Tag, ChevronRight, BookOpen, X } from 'lucide-react';
+import { Filter, Calendar, ChevronDown, Search, Bookmark, FileText, ExternalLink, MessageSquare, Plus, MoreHorizontal, Clock, Tag, ChevronRight, BookOpen, X, Sparkles, Wand2, CheckCircle2, Loader2 } from 'lucide-react';
+import { generateNotesFromText } from '../services/geminiService';
 
 interface AnalysisViewProps {
   onChatWithPaper?: (paper: any) => void;
@@ -21,6 +22,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
   const [noteSearch, setNoteSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   
   // Note Form State
   const [newNote, setNewNote] = useState({ title: '', content: '', tags: '' });
@@ -41,14 +44,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
       date: "Oct 10, 2023",
       tags: ["Methodology", "Safety"],
       lastEdited: "1 day ago"
-    },
-    {
-      id: 3,
-      title: "JAK-STAT Pathway Mechanism Observations",
-      content: "The targeted inhibition of JAK1/2 seems crucial. Observation: Side effects like acne appear dose-dependent in most phase 2 trials. Need to check if this carries over to phase 3 results.",
-      date: "Oct 08, 2023",
-      tags: ["Mechanism", "Safety", "JAK"],
-      lastEdited: "3 days ago"
     }
   ]);
 
@@ -74,6 +69,31 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
       tags: ["JAK3/TEC", "Adolescent"]
     }
   ];
+
+  const handleSynthesizeNotes = async () => {
+    setIsSynthesizing(true);
+    
+    // Get summary text from DOM or predefined string
+    const summaryContent = document.getElementById('summary-body')?.innerText || "";
+    const generated = await generateNotesFromText(summaryContent);
+    
+    if (generated && generated.length > 0) {
+      const newNotes: Note[] = generated.map((n: any, idx: number) => ({
+        id: Date.now() + idx,
+        title: n.title,
+        content: n.content,
+        tags: [...n.tags, "AI Generated"],
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        lastEdited: "Just now"
+      }));
+      
+      setNotes(prev => [...newNotes, ...prev]);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    }
+    
+    setIsSynthesizing(false);
+  };
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -170,16 +190,42 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
 
       {activeTab === "Overview" && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm relative">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Executive Summary</h2>
-              <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded uppercase tracking-wider">
-                <Sparkles size={12} className="animate-pulse" />
-                AI Generated
+              <div className="flex items-center gap-3">
+                {showSuccess ? (
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 animate-in fade-in zoom-in-95">
+                    <CheckCircle2 size={16} />
+                    <span>Notes Added</span>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={handleSynthesizeNotes}
+                    disabled={isSynthesizing}
+                    className="flex items-center gap-2 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all disabled:opacity-50"
+                  >
+                    {isSynthesizing ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        Synthesizing...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 size={12} />
+                        Synthesize Notes
+                      </>
+                    )}
+                  </button>
+                )}
+                <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-1.5 rounded-lg uppercase tracking-wider">
+                  <Sparkles size={12} className="text-amber-400" />
+                  AI Verified
+                </div>
               </div>
             </div>
             
-            <div className="p-6 lg:p-8 space-y-8">
+            <div className="p-6 lg:p-8 space-y-8" id="summary-body">
               <section>
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <BookOpen size={14} className="text-emerald-500" />
@@ -518,22 +564,3 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
 };
 
 export default AnalysisView;
-
-// Dummy helper icon
-const Sparkles = ({ size, className }: { size?: number, className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-    <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
-  </svg>
-);
