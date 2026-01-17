@@ -1,15 +1,56 @@
 
-import React, { useState } from 'react';
-import { Filter, Calendar, ChevronDown, Search, Bookmark, FileText, ExternalLink, MessageSquare, Plus, MoreHorizontal, Clock, Tag, ChevronRight, BookOpen } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Filter, Calendar, ChevronDown, Search, Bookmark, FileText, ExternalLink, MessageSquare, Plus, MoreHorizontal, Clock, Tag, ChevronRight, BookOpen, X } from 'lucide-react';
 
 interface AnalysisViewProps {
   onChatWithPaper?: (paper: any) => void;
+}
+
+interface Note {
+  id: number;
+  title: string;
+  content: string;
+  date: string;
+  tags: string[];
+  lastEdited: string;
 }
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
   const tabs = ["Overview", "Papers (12)", "Notes"];
   const [activeTab, setActiveTab] = React.useState("Overview");
   const [noteSearch, setNoteSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  
+  // Note Form State
+  const [newNote, setNewNote] = useState({ title: '', content: '', tags: '' });
+
+  const [notes, setNotes] = useState<Note[]>([
+    {
+      id: 1,
+      title: "Efficacy Comparison: Baricitinib vs. Ritlecitinib",
+      content: "Initial meta-analysis suggests Baricitinib has a slightly higher success rate in pediatric cohorts, though ritlecitinib shows promising results in long-term safety profiles regarding infection rates.",
+      date: "Oct 12, 2023",
+      tags: ["Comparison", "Efficacy", "JAK"],
+      lastEdited: "2 hours ago"
+    },
+    {
+      id: 2,
+      title: "Exclusion Criteria Summary for King et al.",
+      content: "Key exclusions to note: active tuberculosis history, malignancy within 5 years, and concurrent use of other systemic JAK inhibitors. This limits the generalizability to comorbid patients.",
+      date: "Oct 10, 2023",
+      tags: ["Methodology", "Safety"],
+      lastEdited: "1 day ago"
+    },
+    {
+      id: 3,
+      title: "JAK-STAT Pathway Mechanism Observations",
+      content: "The targeted inhibition of JAK1/2 seems crucial. Observation: Side effects like acne appear dose-dependent in most phase 2 trials. Need to check if this carries over to phase 3 results.",
+      date: "Oct 08, 2023",
+      tags: ["Mechanism", "Safety", "JAK"],
+      lastEdited: "3 days ago"
+    }
+  ]);
 
   const papers = [
     {
@@ -34,9 +75,49 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
     }
   ];
 
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    notes.forEach(note => note.tags.forEach(tag => tags.add(tag)));
+    return Array.from(tags).sort();
+  }, [notes]);
+
+  const filteredNotes = useMemo(() => {
+    return notes.filter(n => {
+      const matchesSearch = n.title.toLowerCase().includes(noteSearch.toLowerCase()) || 
+                           n.content.toLowerCase().includes(noteSearch.toLowerCase());
+      const matchesTags = activeFilters.length === 0 || 
+                         activeFilters.every(filterTag => n.tags.includes(filterTag));
+      return matchesSearch && matchesTags;
+    });
+  }, [notes, noteSearch, activeFilters]);
+
+  const toggleFilter = (tag: string) => {
+    setActiveFilters(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleAddNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNote.title || !newNote.content) return;
+
+    const tagsArray = newNote.tags.split(',').map(t => t.trim()).filter(t => t !== "");
+    const note: Note = {
+      id: Date.now(),
+      title: newNote.title,
+      content: newNote.content,
+      tags: tagsArray,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      lastEdited: "Just now"
+    };
+
+    setNotes([note, ...notes]);
+    setNewNote({ title: '', content: '', tags: '' });
+    setIsAddingNote(false);
+  };
+
   const handleCitationClick = (paperId: number) => {
     setActiveTab("Papers (12)");
-    // In a real app, we would scroll to the specific paper element
     setTimeout(() => {
       const element = document.getElementById(`paper-${paperId}`);
       element?.scrollIntoView({ behavior: 'smooth' });
@@ -99,7 +180,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
             </div>
             
             <div className="p-6 lg:p-8 space-y-8">
-              {/* Clinical Significance Section */}
               <section>
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <BookOpen size={14} className="text-emerald-500" />
@@ -114,7 +194,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
                 </p>
               </section>
 
-              {/* Mechanism Section */}
               <section>
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <Tag size={14} className="text-emerald-500" />
@@ -129,7 +208,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
                 </p>
               </section>
 
-              {/* Safety & Tolerability Section */}
               <section>
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <Filter size={14} className="text-emerald-500" />
@@ -164,25 +242,12 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
                 though long-term safety data beyond 52 weeks is essential for evaluating the risk of thromboembolic events and malignancy."
               </div>
             </div>
-            
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
-              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sources in this summary</h4>
-              <div className="space-y-1">
-                {papers.map(p => (
-                  <div key={p.id} className="text-xs flex items-center gap-2 group cursor-pointer" onClick={() => handleCitationClick(p.id)}>
-                    <span className="font-bold text-emerald-600">[{p.id}]</span>
-                    <span className="text-slate-500 group-hover:text-emerald-600 transition-colors truncate">{p.title} — {p.journal} ({p.date})</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       )}
 
       {activeTab === "Papers (12)" && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* Filters Bar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors">
@@ -200,9 +265,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
             </div>
             
             <div className="relative w-full sm:w-auto">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
-                <Search size={14} />
-              </div>
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
                 type="text" 
                 placeholder="Filter..." 
@@ -211,7 +274,6 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
             </div>
           </div>
 
-          {/* Paper List */}
           <div className="space-y-4">
             {papers.map((paper) => (
               <div id={`paper-${paper.id}`} key={paper.id} className="bg-white border border-slate-200 rounded-xl p-4 lg:p-6 shadow-sm group hover:border-emerald-200 transition-colors">
@@ -275,8 +337,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
       )}
 
       {activeTab === "Notes" && (
-        <div className="animate-in fade-in duration-300">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
+        <div className="animate-in fade-in duration-300 space-y-6">
+          {/* Note Management Bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <div className="relative flex-1 max-w-sm">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -284,36 +347,169 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ onChatWithPaper }) => {
                   type="text" 
                   value={noteSearch}
                   onChange={(e) => setNoteSearch(e.target.value)}
-                  placeholder="Search notes..." 
+                  placeholder="Search in notes..." 
                   className="w-full bg-white border border-slate-200 rounded-lg py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all shadow-sm"
                 />
               </div>
-              <button className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-                <Tag size={14} />
-                <span>Tags</span>
-              </button>
             </div>
-            <button className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm active:scale-95">
+            <button 
+              onClick={() => setIsAddingNote(true)}
+              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm active:scale-95"
+            >
               <Plus size={16} />
               <span>New Note</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:border-emerald-200 transition-all group flex flex-col h-full">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] lg:text-[10px] font-bold rounded uppercase tracking-wider">Comparison</span>
-                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] lg:text-[10px] font-bold rounded uppercase tracking-wider">Efficacy</span>
-                </div>
-              </div>
-              <h4 className="font-bold text-slate-800 mb-2 line-clamp-1 group-hover:text-emerald-600 transition-colors">Efficacy Comparison: Baricitinib vs. Ritlecitinib</h4>
-              <p className="text-[11px] lg:text-xs text-slate-600 leading-relaxed mb-6 line-clamp-3 flex-grow">Initial meta-analysis suggests Baricitinib has a slightly higher success rate in pediatric cohorts, though ritlecitinib shows promising results in long-term safety profiles regarding infection rates.</p>
-              <div className="flex items-center justify-between pt-4 border-t border-slate-50 text-[10px] font-medium text-slate-400">
-                <div className="flex items-center gap-1.5"><Calendar size={12} /><span>Oct 12, 2023</span></div>
-                <div className="flex items-center gap-1.5"><Clock size={12} /><span>2 hours ago</span></div>
-              </div>
+          {/* Tag Filter Bar */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+            <div className="flex items-center gap-2 text-slate-400 mr-2 flex-shrink-0">
+              <Tag size={14} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Filters:</span>
             </div>
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => toggleFilter(tag)}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all whitespace-nowrap border ${
+                  activeFilters.includes(tag)
+                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-md'
+                    : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200 hover:text-emerald-600'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+            {activeFilters.length > 0 && (
+              <button 
+                onClick={() => setActiveFilters([])}
+                className="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 underline underline-offset-4 ml-2 whitespace-nowrap"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+
+          {/* Note Grid */}
+          {filteredNotes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+              {filteredNotes.map((note) => (
+                <div key={note.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:border-emerald-200 transition-all group flex flex-col h-full relative">
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {note.tags.map(tag => (
+                      <button 
+                        key={tag} 
+                        onClick={(e) => { e.stopPropagation(); toggleFilter(tag); }}
+                        className={`px-2 py-0.5 text-[9px] lg:text-[10px] font-bold rounded uppercase tracking-wider transition-colors ${
+                          activeFilters.includes(tag)
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <h4 className="font-bold text-slate-800 mb-2 line-clamp-1 group-hover:text-emerald-600 transition-colors">
+                    {note.title}
+                  </h4>
+                  
+                  <p className="text-[11px] lg:text-xs text-slate-600 leading-relaxed mb-6 line-clamp-3 flex-grow">
+                    {note.content}
+                  </p>
+                  
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-50 text-[10px] font-medium text-slate-400">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar size={12} />
+                      <span>{note.date}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={12} />
+                      <span>{note.lastEdited}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-white border border-dashed border-slate-200 rounded-xl">
+              <Search size={32} className="mb-4 opacity-20" />
+              <p className="text-sm font-medium">No notes match your current filters</p>
+              <button 
+                onClick={() => { setNoteSearch(""); setActiveFilters([]); }}
+                className="mt-2 text-xs text-emerald-600 font-bold hover:underline"
+              >
+                Clear all search and filters
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* New Note Modal Overlay */}
+      {isAddingNote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-emerald-600 text-white">
+              <h3 className="font-bold flex items-center gap-2">
+                <Plus size={18} />
+                Create New Research Note
+              </h3>
+              <button onClick={() => setIsAddingNote(false)} className="hover:bg-emerald-500 p-1 rounded-full transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleAddNote} className="p-6 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Title</label>
+                <input 
+                  autoFocus
+                  required
+                  type="text" 
+                  value={newNote.title}
+                  onChange={e => setNewNote({ ...newNote, title: e.target.value })}
+                  placeholder="e.g. Mechanism Analysis"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Content</label>
+                <textarea 
+                  required
+                  rows={4}
+                  value={newNote.content}
+                  onChange={e => setNewNote({ ...newNote, content: e.target.value })}
+                  placeholder="Summarize your observation..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tags (comma separated)</label>
+                <input 
+                  type="text" 
+                  value={newNote.tags}
+                  onChange={e => setNewNote({ ...newNote, tags: e.target.value })}
+                  placeholder="JAK, Safety, Methodology..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                />
+              </div>
+              <div className="pt-4 flex items-center gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsAddingNote(false)}
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-2 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md active:scale-95"
+                >
+                  Save Note
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
