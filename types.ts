@@ -29,3 +29,17 @@ export interface Paper {
   tags: string[];
   url?: string;
 }
+
+export interface Project {
+  id: string;
+  query: string;
+  papers: Paper[];
+  summary: string | null;
+  timestamp: number;
+}
+
+export interface LibraryItem {
+  id: string;
+  paper: Paper;
+  savedAt: number;
+}

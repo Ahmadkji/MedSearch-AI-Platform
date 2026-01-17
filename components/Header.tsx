@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Share2, Menu } from 'lucide-react';
 
 interface HeaderProps {
@@ -7,10 +7,15 @@ interface HeaderProps {
   onMenuClick?: () => void;
   onReferencesClick?: () => void;
   onSearch?: (query: string) => void;
+  hideSearch?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ query, onMenuClick, onReferencesClick, onSearch }) => {
+const Header: React.FC<HeaderProps> = ({ query, onMenuClick, onReferencesClick, onSearch, hideSearch }) => {
   const [inputValue, setInputValue] = useState(query);
+
+  useEffect(() => {
+    setInputValue(query);
+  }, [query]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -27,7 +32,7 @@ const Header: React.FC<HeaderProps> = ({ query, onMenuClick, onReferencesClick, 
         >
           <Menu size={20} />
         </button>
-        <div className="hidden lg:flex items-center gap-6">
+        <div className={`hidden lg:flex items-center gap-6 transition-opacity duration-300 ${hideSearch ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <div className="relative">
             <input
               type="text"
@@ -46,6 +51,9 @@ const Header: React.FC<HeaderProps> = ({ query, onMenuClick, onReferencesClick, 
       </div>
 
       <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 mr-4">
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest hidden sm:inline">MedSearch AI Platform</span>
+        </div>
         <button className="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95">
           <Share2 size={16} strokeWidth={2.5} />
           <span className="hidden sm:inline">Share Report</span>

@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { FileText, ExternalLink, X, BookOpen, Download, Share2, Search, Quote, Bookmark, CheckCircle2, Wand2 } from 'lucide-react';
 
@@ -10,6 +11,7 @@ interface Paper {
   citations: number;
   abstract: string;
   tags: string[];
+  url?: string;
 }
 
 interface ReferencesPanelProps {
@@ -19,6 +21,7 @@ interface ReferencesPanelProps {
   focusedPaperId: number | null;
   onPaperClick?: (id: number) => void;
   onAnalyzePaper?: (paper: Paper, type: 'summary') => void;
+  onBookmark?: (paper: Paper) => void;
 }
 
 const ReferencesPanel: React.FC<ReferencesPanelProps> = ({ 
@@ -27,7 +30,8 @@ const ReferencesPanel: React.FC<ReferencesPanelProps> = ({
   papers, 
   focusedPaperId,
   onPaperClick,
-  onAnalyzePaper
+  onAnalyzePaper,
+  onBookmark
 }) => {
   const scrollRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
@@ -114,7 +118,6 @@ const ReferencesPanel: React.FC<ReferencesPanelProps> = ({
         {papers.map((paper) => (
           <div 
             key={paper.id}
-            // Use curly braces to ensure the arrow function returns void, fixing the TypeScript error
             ref={el => { scrollRefs.current[paper.id] = el; }}
             onClick={() => onPaperClick?.(paper.id)}
             className={`bg-white border rounded-xl p-4 transition-all duration-300 cursor-pointer group hover:shadow-md ${
@@ -123,22 +126,31 @@ const ReferencesPanel: React.FC<ReferencesPanelProps> = ({
                 : 'border-slate-200'
             }`}
           >
-            <div className="flex items-start gap-3 mb-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-colors ${
-                focusedPaperId === paper.id 
-                  ? 'bg-emerald-600 text-white' 
-                  : 'bg-slate-100 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600'
-              }`}>
-                [{paper.id}]
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-colors ${
+                  focusedPaperId === paper.id 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-slate-100 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600'
+                }`}>
+                  [{paper.id}]
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[13px] font-bold text-slate-800 leading-snug mb-1 group-hover:text-emerald-600 transition-colors">
+                    {paper.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium truncate italic">
+                    {paper.authors}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-[13px] font-bold text-slate-800 leading-snug mb-1 group-hover:text-emerald-600 transition-colors">
-                  {paper.title}
-                </h3>
-                <p className="text-[11px] text-slate-500 font-medium truncate italic">
-                  {paper.authors}
-                </p>
-              </div>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onBookmark?.(paper); }}
+                className="p-1.5 text-slate-300 hover:text-emerald-600 transition-colors"
+                title="Save to Library"
+              >
+                <Bookmark size={14} />
+              </button>
             </div>
 
             <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4 px-1">

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { FileText, ExternalLink, Plus, BookOpen, Loader2, Sparkles, RefreshCcw, Send, User, Microscope, Activity, BarChart3 } from 'lucide-react';
+import { FileText, ExternalLink, Plus, BookOpen, Loader2, Sparkles, RefreshCcw, Send, User, Microscope, Activity, BarChart3, Save } from 'lucide-react';
 import { generateNotesFromText, summarizeSinglePaper, getResearchAssistantResponse } from '../services/geminiService';
 import { Message, Paper } from '../types';
 
@@ -25,6 +25,7 @@ interface AnalysisViewProps {
   isGlobalLoading?: boolean;
   globalSummary?: string | null;
   currentQuery?: string;
+  onSaveProject?: () => void;
 }
 
 interface CitationProps { 
@@ -70,7 +71,8 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
   papers, 
   isGlobalLoading,
   globalSummary,
-  currentQuery
+  currentQuery,
+  onSaveProject
 }) => {
   const tabs = ["Overview", "Papers (" + papers.length + ")", "Notes"];
   const [activeTab, setActiveTab] = React.useState("Overview");
@@ -302,15 +304,25 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({
     <div className="p-4 lg:p-8 max-w-[1200px] mx-auto">
       <div className="mb-10">
         <h1 className="text-3xl lg:text-4xl font-black text-slate-900 mb-3 tracking-tight">Analysis Results</h1>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-400 font-bold uppercase tracking-[0.2em]">
-          {isGlobalLoading ? (
-            <span className="flex items-center gap-2"><Loader2 size={12} className="animate-spin" /> Synthesizing literature...</span>
-          ) : (
-            <>
-              <span className="text-slate-400">Database Scan: <span className="text-slate-900">Found {papers.length * 12} articles</span></span>
-              <span className="text-slate-200">|</span>
-              <span className="text-emerald-600">Relevance Filter: <span className="font-black underline">{papers.length} Peer-Reviewed Studies</span></span>
-            </>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-400 font-bold uppercase tracking-[0.2em]">
+            {isGlobalLoading ? (
+              <span className="flex items-center gap-2"><Loader2 size={12} className="animate-spin" /> Synthesizing literature...</span>
+            ) : (
+              <>
+                <span className="text-slate-400">Database Scan: <span className="text-slate-900">Found {papers.length * 12} articles</span></span>
+                <span className="text-slate-200">|</span>
+                <span className="text-emerald-600">Relevance Filter: <span className="font-black underline">{papers.length} Peer-Reviewed Studies</span></span>
+              </>
+            )}
+          </div>
+          {!isGlobalLoading && (globalSummary || paperSummary) && (
+            <button 
+              onClick={onSaveProject}
+              className="flex items-center gap-2 text-[11px] font-black text-slate-500 hover:text-emerald-600 transition-colors uppercase tracking-widest bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm"
+            >
+              <Save size={14} /> Save to Projects
+            </button>
           )}
         </div>
       </div>
